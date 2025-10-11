@@ -1,89 +1,103 @@
-import random 
+import random
+from collections import Counter  
 
+# Game configuration constants
 reels = 3
 rows = 3
 
-#dictionary of symbols and their values
-symbol_count = {
-    "A": 1,
-    "B": 1,
-    "C": 1,
-    "D": 1
-} # symbol and their count
+# Win multipliers as constants (avoiding magic numbers)
+PARTIAL_MATCH_MULTIPLIER = 0.3  # 30% of full value for partial wins
+BONUS_PER_LINE_MULTIPLIER = 0.3  # 30% bonus per extra winning line
 
-symbol_values = {
-    "A": 5,
-    "B": 5,
-    "C": 5,
-    "D": 5
-} # symbol and their values
+# dictionary of symbols and their values
+symbol_count = {"🍒": 8, "🍋": 8, "🍊": 8, "🍇": 8, "7️⃣": 5, "⭐": 3}  # symbol and their count
 
-
+symbol_values = {"🍒": 8, "🍋": 8, "🍊": 8, "🍇": 8, "7️⃣": 15, "⭐": 50}  # symbol and their values
 
 
 """logic for slot machine spin"""
-def get_slot_machine_spin(symbols, reels, row ):
+
+
+def get_slot_machine_spin(symbols, reels, row):
     all_symbols = []
     for symbol, symbol_count in symbols.items():
         for _ in range(symbol_count):
-            all_symbols.append(symbol) # creates a list of all symbols based on their count
+            all_symbols.append(
+                symbol
+            )  # creates a list of all symbols based on their count
 
-
-    columns = [ ]#defined columns as an empty list to store the symbols for each reel
-    for _ in range (rows):# iterates over the number of reels to create each column
-        column = [ ]
-        current_symbols = all_symbols[:] # makes a copy(with slice operator [:]) of all_symbols to avoid modifying the original list, so that any change we make to current_symbols does not affect all_symbols
+    columns = []  # defined columns as an empty list to store the symbols for each reel
+    for _ in range(rows):  # iterates over the number of reels to create each column
+        column = []
+        current_symbols = all_symbols.copy()  # makes a copy to avoid modifying the original list
         for _ in range(reels):
-            value = random.choice(current_symbols) # randomly selects a symbol from the current symbols
-            current_symbols.remove(value) # removes the selected symbol to avoid duplicates in the same column
-            column.append(value)#adds the selected symbol to the current column
+            value = random.choice(
+                current_symbols
+            )  # randomly selects a symbol from the current symbols
+            current_symbols.remove(
+                value
+            )  # removes the selected symbol to avoid duplicates in the same column
+            # adds the selected symbol to the current column
+            column.append(value)
 
         columns.append(column)
 
-    return columns # returns the list of columns, each containing the symbols for that reel
-
-
+    return columns  # returns the list of columns, each containing the symbols for that reel
 
 
 """transposing the slot machine columns to rows for easier display(vertical to horizontal)
-printing the slot machine""" 
+printing the slot machine"""
+
+
 def print_slot_machine(columns):
-    for row in range(len(columns[0])): # iterates over each row index based on the number of rows in the first column
-        for i, column in enumerate(columns): # iterates over each column and its index using enumerate
-            if i != len(columns) - 1: # checks if the current column is not the last one
-                print(column[row], end=" | ") # prints the symbol at the current row of the column followed by a separator " | ", by default end is a newline, but here it's set to " | "
+    for row in range(
+        len(columns[0])
+    ):  # iterates over each row index based on the number of rows in the first column
+        for i, column in enumerate(
+            columns
+        ):  # iterates over each column and its index using enumerate
+            if (
+                i != len(columns) - 1
+            ):  # checks if the current column is not the last one
+                print(
+                    column[row], end=" | "
+                )  # prints the symbol at the current row of the column followed by a separator " | ", by default end is a newline, but here it's set to " | "
             else:
-                print(column[row], end="") # prints the symbol at the current row of the last column without a separator
-        print() # moves to the next line after printing all columns for the current row
-
-
-
+                print(
+                    column[row], end=""
+                )  # prints the symbol at the current row of the last column without a separator
+        print()  # moves to the next line after printing all columns for the current row
 
 
 """checking winnings"""
+
+
 def check_winnings(columns, lines, bet, values):
     winnings = 0
     winning_lines = []
-    for line in range(lines): # iterates over each line the user has bet on
-        symbol = columns[0][line] # gets the symbol in the first column of the current line
-        for column in columns: # iterates over each column to check if the symbols match
-            symbol_to_check = column[line] # gets the symbol in the current column of the current line
-            if symbol != symbol_to_check: # if any symbol does not match, break out of the loop
-                break
-        else: # this else corresponds to the for loop, it executes if the loop was not broken, meaning all symbols matched
-            winnings += values[symbol] * bet # calculates winnings based on the symbol's value and the bet amount
-            winning_lines.append(line + 1) # adds the winning line (1-indexed) to the list of winning lines
+    partial_winnings = 0
 
-    return winnings, winning_lines # returns total winnings and list of winning lines
+    for line in range(lines):  # iterates over each line the user has bet on
+        symbols_in_line = [column[line] for column in columns]  # get all symbols in the line
 
+        # Check for horizontal matches only (across reels)
+        if symbols_in_line[0] == symbols_in_line[1] == symbols_in_line[2]:  # All 3 symbols match horizontally
+            symbol = symbols_in_line[0]
+            winnings += values[symbol] * bet
+            winning_lines.append(line + 1)
+        elif symbols_in_line[0] == symbols_in_line[1] or symbols_in_line[1] == symbols_in_line[2] or symbols_in_line[0] == symbols_in_line[2]:  # 2 symbols match horizontally
+            # Find which symbol appears twice
+            symbol_counts = Counter(symbols_in_line)
+            for symbol, count in symbol_counts.items():
+                if count >= 2:
+                    partial_winnings += values[symbol] * bet * PARTIAL_MATCH_MULTIPLIER  # Use constant for partial wins
+                    winning_lines.append(line + 1)  # Add the line to winning lines for partial wins too
+                    break
 
+    # Bonus multiplier for multiple winning lines
+    if len(winning_lines) > 1:
+        bonus_multiplier = 1 + (len(winning_lines) - 1) * BONUS_PER_LINE_MULTIPLIER  # Use constant for bonus
+        winnings *= bonus_multiplier
 
-"""
-if __name__ == "__main__":
-    slots = get_slot_machine_spin(symbol_count, reels, rows)
-    print_slot_machine(slots)
-    winnings, winning_lines = check_winnings(slots, 3, 20, symbols_count)
-    print(f"You won ${winnings}.")
-    print(f"You won on lines:", *winning_lines) #unpacks the winning_lines list to print each line number separately
-
-"""
+    total_winnings = winnings + partial_winnings
+    return total_winnings, winning_lines  # returns total winnings and list of winning lines
