@@ -125,45 +125,4 @@ def check_winnings(columns, bet):
     return total_winnings, full_win_lines, partial_win_lines
 
 
-def print_slot_machine(columns, full_wins=None, partial_wins=None):
-    """
-    Display the slot machine with color highlighting for winning lines.
-    
-    Args:
-        columns (list): List of columns representing the slot machine spin
-        full_wins (list, optional): List of line numbers with full wins
-        partial_wins (list, optional): List of line numbers with partial wins
-    """
-    # Set default empty lists if no win information provided
-    if full_wins is None:
-        full_wins = []
-    if partial_wins is None:
-        partial_wins = []
-
-    # Display each row of the slot machine
-    for row in range(len(columns[0])):
-        # Display each column in this row
-        for i, column in enumerate(columns):
-            # Get the symbol at this position
-            symbol = column[row]
-            
-            # Determine separator character (pipe for all except last column)
-            end_char = " | " if i != len(columns) - 1 else ""
-            
-            # Set default color (no highlighting)
-            color = Fore.RESET
-
-            # Apply color highlighting based on win type
-            if (row + 1) in full_wins:
-                # Green and bright for full wins (3 matching symbols)
-                color = Fore.GREEN + Style.BRIGHT
-            elif (row + 1) in partial_wins:
-                # Yellow and bright for partial wins (2 matching symbols)
-                color = Fore.YELLOW + Style.BRIGHT
-
-            # Print the symbol with appropriate color and separator
-            print(color + symbol + Style.RESET_ALL, end=end_char)
-        
-        # Move to next line after completing a row
-        print()
 
