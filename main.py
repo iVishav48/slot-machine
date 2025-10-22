@@ -13,7 +13,6 @@ from random import choice
 # Import game logic functions and constants from game_logic module
 from game_logic import (
     get_slot_machine_spin,      # Function to generate random slot machine spin
-    print_slot_machine,         # Function to display slot machine with color highlighting
     check_winnings,             # Function to calculate winnings based on symbol matches
     symbol_count,               # Dictionary containing count of each symbol in the pool
     symbol_values,              # Dictionary containing point values for each symbol
@@ -21,6 +20,12 @@ from game_logic import (
     rows,                       # Number of rows in the slot machine
     PARTIAL_MATCH_MULTIPLIER,   # Multiplier for partial wins (2 matching symbols)
     BONUS_PER_LINE_MULTIPLIER,  # Multiplier for bonus per line (currently unused)
+)
+
+# Import display functions from display module
+from display import (
+    spin_animation,             # Function to display spinning animation
+    print_slot_machine,         # Function to display slot machine with color highlighting
 )
 
 
@@ -124,6 +129,9 @@ def spin(balance):
     print(
         f"You are betting ${bet} on {lines} {'line' if lines == 1 else 'lines'}. \nTotal bet is ${total_bet}"
     )
+    
+    # Show spinning animation before revealing the result
+    spin_animation(symbol_count, reels, rows, duration=1.5)
     
     # Generate random slot machine spin using symbol pool, reels, and rows
     slots = get_slot_machine_spin(symbol_count, reels, rows)
