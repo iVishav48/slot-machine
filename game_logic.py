@@ -4,8 +4,8 @@ import random
 from collections import Counter  
 # Import colorama for colored terminal output
 from colorama import Fore, Style, init
-# Initialize colorama to automatically reset colors after each print
-init(autoreset=True)
+# Initialize colorama with Windows compatibility and auto-reset
+init(autoreset=True, convert=True)
 
 
 # Game configuration constants
