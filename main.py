@@ -1,4 +1,8 @@
 from text import deposit, number_of_lines, get_bet, MAX_LINES, MAX_BET, MIN_BET
+from colorama import Fore, Style, init
+init(autoreset=True)  # Initialize colorama for colored terminal output
+from collections import Counter
+from random import choice
 from game_logic import (
     get_slot_machine_spin,
     print_slot_machine,
@@ -7,6 +11,8 @@ from game_logic import (
     symbol_values,
     reels,
     rows,
+    PARTIAL_MATCH_MULTIPLIER,
+    BONUS_PER_LINE_MULTIPLIER,
 )
 
 
@@ -35,12 +41,16 @@ def spin(balance):
     # tells you your total bet and how many lines you are betting on, used f string for singular and plural lines
 
     slots = get_slot_machine_spin(symbol_count, reels, rows)
-    print_slot_machine(slots)
-    winnings, winning_lines = check_winnings(slots, lines, bet, symbol_values)
+    winnings, full_win_lines, partial_win_lines = check_winnings(slots, bet)
+    print_slot_machine(slots, full_win_lines, partial_win_lines)
     print(f"You won ${winnings}.")
-    print(
-        f"You won on lines:", *winning_lines
-    )  # unpacks (unpack operator) the winning_lines list to print each line number separately
+    if full_win_lines or partial_win_lines:
+        if full_win_lines:
+            print(f"Full wins on lines: {full_win_lines}")
+        if partial_win_lines:
+            print(f"Partial wins on lines: {partial_win_lines}")
+    else:
+        print("No wins this round.")
     return winnings - total_bet  # returns the net gain or loss from the spin
 
 

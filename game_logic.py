@@ -1,103 +1,78 @@
 import random
 from collections import Counter  
+from colorama import Fore, Style, init
+init(autoreset=True)
+
 
 # Game configuration constants
 reels = 3
 rows = 3
+PARTIAL_MATCH_MULTIPLIER = 0.3
+BONUS_PER_LINE_MULTIPLIER = 0.3
 
-# Win multipliers as constants (avoiding magic numbers)
-PARTIAL_MATCH_MULTIPLIER = 0.3  # 30% of full value for partial wins
-BONUS_PER_LINE_MULTIPLIER = 0.3  # 30% bonus per extra winning line
-
-# dictionary of symbols and their values
-symbol_count = {"🍒": 8, "🍋": 8, "🍊": 8, "🍇": 8, "7️⃣": 5, "⭐": 3}  # symbol and their count
-
-symbol_values = {"🍒": 8, "🍋": 8, "🍊": 8, "🍇": 8, "7️⃣": 15, "⭐": 50}  # symbol and their values
+symbol_count = {"🍒": 8, "🍋": 8, "🍊": 8, "🍇": 8, "7️⃣": 5, "⭐": 3}
+symbol_values = {"🍒": 8, "🍋": 8, "🍊": 8, "🍇": 8, "7️⃣": 15, "⭐": 50}
 
 
-"""logic for slot machine spin"""
-
-
-def get_slot_machine_spin(symbols, reels, row):
+def get_slot_machine_spin(symbols, reels, rows):
     all_symbols = []
-    for symbol, symbol_count in symbols.items():
-        for _ in range(symbol_count):
-            all_symbols.append(
-                symbol
-            )  # creates a list of all symbols based on their count
+    for symbol, count in symbols.items():
+        all_symbols.extend([symbol] * count)
 
-    columns = []  # defined columns as an empty list to store the symbols for each reel
-    for _ in range(rows):  # iterates over the number of reels to create each column
+    columns = []
+    for _ in range(reels):
         column = []
-        current_symbols = all_symbols.copy()  # makes a copy to avoid modifying the original list
-        for _ in range(reels):
-            value = random.choice(
-                current_symbols
-            )  # randomly selects a symbol from the current symbols
-            current_symbols.remove(
-                value
-            )  # removes the selected symbol to avoid duplicates in the same column
-            # adds the selected symbol to the current column
+        current_symbols = all_symbols.copy()
+        for _ in range(rows):
+            value = random.choice(current_symbols)
+            current_symbols.remove(value)
             column.append(value)
-
         columns.append(column)
-
-    return columns  # returns the list of columns, each containing the symbols for that reel
-
-
-"""transposing the slot machine columns to rows for easier display(vertical to horizontal)
-printing the slot machine"""
+    return columns
 
 
-def print_slot_machine(columns):
-    for row in range(
-        len(columns[0])
-    ):  # iterates over each row index based on the number of rows in the first column
-        for i, column in enumerate(
-            columns
-        ):  # iterates over each column and its index using enumerate
-            if (
-                i != len(columns) - 1
-            ):  # checks if the current column is not the last one
-                print(
-                    column[row], end=" | "
-                )  # prints the symbol at the current row of the column followed by a separator " | ", by default end is a newline, but here it's set to " | "
-            else:
-                print(
-                    column[row], end=""
-                )  # prints the symbol at the current row of the last column without a separator
-        print()  # moves to the next line after printing all columns for the current row
-
-
-"""checking winnings"""
-
-
-def check_winnings(columns, lines, bet, values):
+def check_winnings(columns, bet):
     winnings = 0
-    winning_lines = []
     partial_winnings = 0
+    full_win_lines = []
+    partial_win_lines = []
 
-    for line in range(lines):  # iterates over each line the user has bet on
-        symbols_in_line = [column[line] for column in columns]  # get all symbols in the line
+    num_lines = len(columns[0])
+    for line in range(num_lines):
+        symbols_in_line = [column[line] for column in columns]
+        counts = Counter(symbols_in_line)
 
-        # Check for horizontal matches only (across reels)
-        if symbols_in_line[0] == symbols_in_line[1] == symbols_in_line[2]:  # All 3 symbols match horizontally
-            symbol = symbols_in_line[0]
-            winnings += values[symbol] * bet
-            winning_lines.append(line + 1)
-        elif symbols_in_line[0] == symbols_in_line[1] or symbols_in_line[1] == symbols_in_line[2] or symbols_in_line[0] == symbols_in_line[2]:  # 2 symbols match horizontally
-            # Find which symbol appears twice
-            symbol_counts = Counter(symbols_in_line)
-            for symbol, count in symbol_counts.items():
-                if count >= 2:
-                    partial_winnings += values[symbol] * bet * PARTIAL_MATCH_MULTIPLIER  # Use constant for partial wins
-                    winning_lines.append(line + 1)  # Add the line to winning lines for partial wins too
-                    break
-
-    # Bonus multiplier for multiple winning lines
-    if len(winning_lines) > 1:
-        bonus_multiplier = 1 + (len(winning_lines) - 1) * BONUS_PER_LINE_MULTIPLIER  # Use constant for bonus
-        winnings *= bonus_multiplier
+        if 3 in counts.values():
+            symbol = max(counts, key=counts.get)
+            winnings += symbol_values[symbol] * bet
+            full_win_lines.append(line + 1)
+        elif 2 in counts.values():
+            symbol = max(counts, key=counts.get)
+            partial_winnings += symbol_values[symbol] * bet * PARTIAL_MATCH_MULTIPLIER
+            partial_win_lines.append(line + 1)
 
     total_winnings = winnings + partial_winnings
-    return total_winnings, winning_lines  # returns total winnings and list of winning lines
+    return total_winnings, full_win_lines, partial_win_lines
+
+
+def print_slot_machine(columns, full_wins=None, partial_wins=None):
+    if full_wins is None:
+        full_wins = []
+    if partial_wins is None:
+        partial_wins = []
+
+    for row in range(len(columns[0])):
+        for i, column in enumerate(columns):
+            symbol = column[row]
+            end_char = " | " if i != len(columns) - 1 else ""
+            color = Fore.RESET
+
+            # Highlight based on line type
+            if (row + 1) in full_wins:
+                color = Fore.GREEN + Style.BRIGHT  # full win
+            elif (row + 1) in partial_wins:
+                color = Fore.YELLOW + Style.BRIGHT  # partial win
+
+            print(color + symbol + Style.RESET_ALL, end=end_char)
+        print()
+
